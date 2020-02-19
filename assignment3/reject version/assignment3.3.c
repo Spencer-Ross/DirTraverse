@@ -44,12 +44,20 @@ int readable(char* inputPath) {
 	if(status < 0) return -errno;
 
 	//open a DIR, return 1 if file 0 if unsuccessful
-   	if((dir = opendir(inputPath)) == NULL ) {
-   		//closedir(dir);
-   		if(S_ISREG(s->st_mode) && (access(inputPath, R_OK) == 0))
-   			return 1;
-   		return 0;
-   	}
+//    if((dir = opendir(inputPath)) == NULL ) {
+//    	//closedir(dir);
+//    	if(S_ISREG(s->st_mode) && (access(inputPath, R_OK) == 0))
+//    		return 1;
+//    	return 0;
+//    }
+
+    if(!S_ISDIR(s->st_mode)) {
+        if(!access(inputPath, R_OK)) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
     
     //read each file within a DIR
     while((dp = readdir(dir))) {
@@ -87,3 +95,41 @@ int readable(char* inputPath) {
     closedir(dir);
     return count;
 }
+
+
+struct stat sd;
+    char *buffer;
+    if(inputPath==NULL){
+        buffer=getcwd(NULL,0); //man pages showed that if you use null as buffer
+        if(buffer==NULL){  //it will take care of malloc and free for you
+            return -errno; //if its still null then CWD is null
+        }
+        else{
+            inputPath=buffer; //otherwise inputPath is set to CWD
+        }
+​
+    }
+    if(access(inputPath,R_OK)){
+        return -errno;
+    }
+    if(lstat(inputPath,&sd)<0){
+        return -errno;
+    }
+    if(!S_ISDIR(sd.st_mode)){
+        if(!access(inputPath,R_OK)){
+            return 1;
+        }
+        else{
+            return 0;
+        }
+    }
+    chdir(inputPath);
+    int count=0;
+    DIR *dopen=opendir("."); //directoryOpen
+    if(dopen==NULL){
+        return -errno;
+    }
+    struct dirent *cdirent=readdir(dopen); //currentDirent
+    if(cdirent==NULL){
+        return -errno;
+    }
